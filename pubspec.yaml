@@ -1,0 +1,93 @@
+name: peak
+description: "Peak — personal mobile workout tracker. Log every rep. Climb every peak."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.9.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # State management
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.6.1
+
+  # Routing
+  go_router: ^14.6.2
+
+  # Database (local-first, SQLite-backed)
+  drift: ^2.21.0
+  drift_flutter: ^0.2.4
+  sqlite3_flutter_libs: ^0.5.26
+  path_provider: ^2.1.5
+  path: ^1.9.0
+
+  # Models / codegen
+  freezed_annotation: ^3.0.0
+  json_annotation: ^4.9.0
+
+  # Utilities
+  uuid: ^4.5.1
+  intl: ^0.20.1
+  collection: ^1.19.0
+  shared_preferences: ^2.3.4
+
+  # Fonts (Google Fonts — Lexend + Epilogue)
+  google_fonts: ^6.2.1
+
+  # Notifications / haptics for rest timer
+  flutter_local_notifications: ^18.0.1
+  vibration: ^3.1.2
+
+  # Charts (Recharts equivalent)
+  fl_chart: ^0.69.2
+
+  # Export / import / share
+  file_picker: ^8.1.4
+  share_plus: ^10.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+  # Codegen
+  build_runner: ^2.4.13
+  drift_dev: ^2.21.0
+  riverpod_generator: ^2.6.3
+  freezed: ^3.0.0
+  json_serializable: ^6.9.0
+  custom_lint: ^0.7.3
+  riverpod_lint: ^2.6.5
+
+  # App icon + splash screen
+  flutter_launcher_icons: ^0.14.2
+  flutter_native_splash: ^2.4.3
+
+  # Pure-Dart PNG generation for the launcher icon + splash master.
+  image: ^4.5.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/data/
+    - assets/icon/
+    - assets/sounds/
+
+flutter_launcher_icons:
+  android: false
+  ios: true
+  image_path: "assets/icon/peak-icon.png"
+  remove_alpha_ios: true
+
+flutter_native_splash:
+  color: "#131316"
+  image: assets/icon/peak-splash.png
+  android: false
+  ios: true
+  fullscreen: true
+  ios_content_mode: center
