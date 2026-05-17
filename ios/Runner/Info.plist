@@ -66,6 +66,17 @@
 		<string>Peak reads/writes JSON files when you import or export your workout history.</string>
 		<key>LSSupportsOpeningDocumentsInPlace</key>
 		<true/>
+		<!-- url_launcher: lets canLaunchUrl detect whether the YouTube app is
+		     installed so tutorial links open natively when possible, and
+		     fall back to Safari otherwise. https URLs themselves don't
+		     need to be declared here. -->
+		<key>LSApplicationQueriesSchemes</key>
+		<array>
+			<string>https</string>
+			<string>http</string>
+			<string>youtube</string>
+			<string>youtubeapp</string>
+		</array>
 		<key>UIStatusBarHidden</key>
 		<true/>
 		<key>UIViewControllerBasedStatusBarAppearance</key>

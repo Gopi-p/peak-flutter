@@ -196,9 +196,28 @@ class _LogSetPageState extends ConsumerState<LogSetPage> {
                         120,
                       ),
                       children: [
-                        Text(
-                          ctx.exercise?.name ?? 'Exercise',
-                          style: PeakType.headlineXl().copyWith(fontSize: 28, height: 1.05),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                ctx.exercise?.name ?? 'Exercise',
+                                style: PeakType.headlineXl()
+                                    .copyWith(fontSize: 28, height: 1.05),
+                              ),
+                            ),
+                            if (ctx.exercise != null)
+                              IconButton(
+                                tooltip: 'How to do this exercise',
+                                visualDensity: VisualDensity.compact,
+                                icon: const Icon(
+                                  Icons.help_outline_rounded,
+                                  color: PeakColors.primary,
+                                ),
+                                onPressed: () =>
+                                    context.push('/library/${ctx.exerciseId}'),
+                              ),
+                          ],
                         ),
                         if ((ctx.exercise?.cue ?? '').isNotEmpty) ...[
                           const SizedBox(height: 4),

@@ -1,4 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Public-CDN reads only: YouTube tutorial deep-links from the exercise
+         detail page (url_launcher → external browser / YouTube app), YouTube
+         thumbnail images, Google Fonts on first run. The app has no server,
+         no auth, and never sends user data over the network. -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <!-- Rest-timer notification (required on Android 13+). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Defensive: declared so vibration on rest-timer expiry works on all OEMs. -->
@@ -48,6 +53,17 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- url_launcher: required on Android 11+ so canLaunchUrl can verify
+             that a browser or YouTube app exists to handle https://youtube
+             tutorial links. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="http" />
         </intent>
     </queries>
 </manifest>
