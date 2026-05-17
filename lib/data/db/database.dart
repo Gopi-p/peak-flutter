@@ -29,16 +29,25 @@ class PeakDatabase extends _$PeakDatabase {
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (m) async {
           await m.createAll();
-          // Seed singleton settings row.
+          // Seed singleton settings row with an explicit id so insertOrIgnore
+          // collides against the same row every time.
           await into(appSettings).insert(
-            AppSettingsCompanion.insert(),
+            AppSettingsCompanion.insert(id: const Value(1)),
             mode: InsertMode.insertOrIgnore,
           );
         },
         beforeOpen: (details) async {
           await customStatement('PRAGMA foreign_keys = ON');
+          // Dedupe AppSettings — earlier builds could land in a state with
+          // two rows; downstream code (settingsStreamProvider.watchSingle())
+          // throws "Expected exactly one element, but got 2" the moment it
+          // observes that state. Keep the lowest rowid, drop the rest.
+          await customStatement(
+            'DELETE FROM app_settings WHERE rowid NOT IN '
+            '(SELECT MIN(rowid) FROM app_settings)',
+          );
           await into(appSettings).insert(
-            AppSettingsCompanion.insert(),
+            AppSettingsCompanion.insert(id: const Value(1)),
             mode: InsertMode.insertOrIgnore,
           );
         },

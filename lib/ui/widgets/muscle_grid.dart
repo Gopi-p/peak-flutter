@@ -55,7 +55,7 @@ class _MuscleTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final setsLabel = sets > 0 ? '${((sets * 10).round() / 10)} sets / wk' : '—';
+    final setsLabel = sets > 0 ? '${((sets * 10).round() / 10)} sets / wk' : '0 sets';
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(

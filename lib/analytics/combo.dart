@@ -36,26 +36,26 @@ ComboResult classifyCombination(List<MuscleGroup> muscles) {
   if (inPush == total && total >= 2) {
     return const ComboResult(
       label: CombinationLabel.push,
-      note: 'Classic push pairing — chest, shoulders and triceps share the press pattern.',
+      note: 'Classic push pairing. Chest, shoulders, and triceps share the press pattern.',
     );
   }
   if (inPull == total && total >= 2) {
     return const ComboResult(
       label: CombinationLabel.pull,
-      note: 'Classic pull pairing — back and biceps move together.',
+      note: 'Classic pull pairing. Back and biceps move together.',
     );
   }
   if (inLegs == total && total >= 2) {
     return const ComboResult(
       label: CombinationLabel.legs,
-      note: 'Lower body day. Recovery cost is high — eat and sleep.',
+      note: 'Lower body day. Recovery cost is high. Eat and sleep.',
     );
   }
   if (inPush > 0 && inPull > 0 && inLegs == 0) {
     if (set.contains(MuscleGroup.chest) && set.contains(MuscleGroup.back)) {
       return const ComboResult(
         label: CombinationLabel.antagonist,
-        note: 'Chest + Back is a classic antagonist pairing — fatigue interference is low.',
+        note: 'Chest + Back is a classic antagonist pairing. Fatigue interference is low.',
       );
     }
     return const ComboResult(
@@ -69,7 +69,7 @@ ComboResult classifyCombination(List<MuscleGroup> muscles) {
   if (inPush + inPull >= 2 && inLegs >= 1) {
     return const ComboResult(
       label: CombinationLabel.fullBody,
-      note: 'Full body session. High systemic fatigue — keep volume modest per muscle.',
+      note: 'Full body session. High systemic fatigue. Keep volume modest per muscle.',
     );
   }
   return const ComboResult(

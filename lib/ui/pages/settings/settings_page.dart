@@ -29,7 +29,16 @@ class SettingsPage extends ConsumerWidget {
       ),
       body: settingsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator(color: PeakColors.primary)),
-        error: (e, _) => Center(child: Text('$e', style: PeakType.bodyMd())),
+        error: (e, _) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(PeakSpacing.edge),
+            child: Text(
+              "Couldn't load settings. Restart the app and try again.",
+              style: PeakType.bodyMd(color: PeakColors.mutedForeground),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
         data: (s) => ListView(
           padding: const EdgeInsets.fromLTRB(
             PeakSpacing.edge,
@@ -68,7 +77,7 @@ class SettingsPage extends ConsumerWidget {
             PeakCard(
               title: 'About',
               child: Text(
-                'Peak v0.1 — local-first, single user. Log every rep. Climb every peak.',
+                'Peak v0.1\nLocal-first. Single user.\nLog every rep. Climb every peak.',
                 style: PeakType.bodyMd(color: PeakColors.mutedForeground),
               ),
             ),

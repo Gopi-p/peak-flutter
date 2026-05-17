@@ -226,6 +226,12 @@ class SessionRepository {
     await (_db.delete(_db.workoutSets)..where((t) => t.id.equals(setId))).go();
   }
 
+  /// Hard-deletes an exercise entry. Sets cascade via the FK in `tables.dart`.
+  /// Used by the active-session UI when removing an exercise mid-session.
+  Future<void> deleteEntry(String entryId) async {
+    await (_db.delete(_db.exerciseEntries)..where((t) => t.id.equals(entryId))).go();
+  }
+
   /// Finishes a session — stamps endedAt and writes the combination classification.
   Future<void> finishSession(String sessionId) async {
     final session = await sessionById(sessionId);

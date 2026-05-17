@@ -1,0 +1,15 @@
+# Copy this file to android/key.properties and fill in the values from your
+# upload keystore. The real key.properties (and *.jks / *.keystore files) are
+# gitignored — never commit secrets.
+#
+# Generate an upload keystore once:
+#
+#   keytool -genkey -v -keystore android/peak-upload-key.jks \
+#       -keyalg RSA -keysize 2048 -validity 10000 -alias peak-upload
+#
+# Then point storeFile at it. Paths are resolved relative to android/app/.
+#
+# storeFile=../peak-upload-key.jks
+# storePassword=changeme
+# keyAlias=peak-upload
+# keyPassword=changeme

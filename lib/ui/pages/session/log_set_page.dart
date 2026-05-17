@@ -151,7 +151,40 @@ class _LogSetPageState extends ConsumerState<LogSetPage> {
             ),
             title: Text('Log set', style: PeakType.overline()),
           ),
-          body: ctx == null
+          body: snap.hasError
+              ? Padding(
+                  padding: const EdgeInsets.all(PeakSpacing.edge),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.error_outline_rounded,
+                          color: PeakColors.destructive,
+                          size: 36,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          "Couldn't load this exercise.",
+                          style: PeakType.bodyLg(),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Tap retry, or go back to the session.',
+                          style: PeakType.bodyMd(color: PeakColors.mutedForeground),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        PeakButton(
+                          label: 'Retry',
+                          onPressed: () => setState(() => _loadCtx = _load()),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : ctx == null
               ? const Center(child: CircularProgressIndicator(color: PeakColors.primary))
               : Stack(
                   children: [

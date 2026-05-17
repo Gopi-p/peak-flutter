@@ -79,15 +79,21 @@ flutter:
     - assets/sounds/
 
 flutter_launcher_icons:
-  android: false
+  android: "ic_launcher"
   ios: true
   image_path: "assets/icon/peak-icon.png"
+  adaptive_icon_background: "#131316"
+  adaptive_icon_foreground: "assets/icon/peak-icon-foreground.png"
+  min_sdk_android: 21
   remove_alpha_ios: true
 
 flutter_native_splash:
   color: "#131316"
   image: assets/icon/peak-splash.png
-  android: false
+  android: true
   ios: true
   fullscreen: true
   ios_content_mode: center
+  android_12:
+    image: assets/icon/peak-icon-foreground.png
+    color: "#131316"

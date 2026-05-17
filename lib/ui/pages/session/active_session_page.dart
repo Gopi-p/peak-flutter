@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -30,13 +31,20 @@ class ActiveSessionPage extends ConsumerWidget {
         ),
         title: Text('Active session', style: PeakType.overline()),
         elevation: 0,
+        actions: [
+          IconButton(
+            tooltip: 'Discard session',
+            icon: const Icon(Icons.delete_outline_rounded),
+            onPressed: () => _confirmDiscardSession(context, ref),
+          ),
+        ],
       ),
       body: sessionStream.when(
         loading: () => const Center(child: CircularProgressIndicator(color: PeakColors.primary)),
         error: (e, _) => Center(child: Text('$e', style: PeakType.bodyMd())),
         data: (session) {
           if (session == null) {
-            return Center(child: Text('Session not found', style: PeakType.bodyMd()));
+            return Center(child: Text('Session not found.', style: PeakType.bodyMd()));
           }
           return entriesStream.when(
             loading: () => const Center(child: CircularProgressIndicator(color: PeakColors.primary)),
@@ -46,6 +54,31 @@ class ActiveSessionPage extends ConsumerWidget {
         },
       ),
     );
+  }
+
+  Future<void> _confirmDiscardSession(BuildContext context, WidgetRef ref) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: PeakColors.surfaceContainerHigh,
+        title: Text('Discard this session?', style: PeakType.headlineLg()),
+        content: Text(
+          'All exercises and sets in this session will be removed. This cannot be undone.',
+          style: PeakType.bodyMd(),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Keep')),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: PeakColors.destructive),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Discard'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !context.mounted) return;
+    await ref.read(sessionRepositoryProvider).softDeleteSession(sessionId);
+    if (context.mounted) context.go('/today');
   }
 }
 
@@ -197,6 +230,30 @@ class _EntryCard extends ConsumerWidget {
   final String sessionId;
   final ExerciseEntry entry;
 
+  Future<void> _confirmRemoveExercise(BuildContext context, WidgetRef ref, String name) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: PeakColors.surfaceContainerHigh,
+        title: Text('Remove $name?', style: PeakType.headlineLg()),
+        content: Text(
+          'All sets logged for this exercise in this session will be removed.',
+          style: PeakType.bodyMd(),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Keep')),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: PeakColors.destructive),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await ref.read(sessionRepositoryProvider).deleteEntry(entry.id);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final catalogAsync = ref.watch(exerciseCatalogProvider);
@@ -205,6 +262,7 @@ class _EntryCard extends ConsumerWidget {
       data: (c) => c.byId(entry.exerciseId),
       orElse: () => null,
     );
+    final name = ex?.name ?? entry.exerciseId;
     return PeakCard(
       padding: const EdgeInsets.all(14),
       child: Column(
@@ -214,12 +272,23 @@ class _EntryCard extends ConsumerWidget {
             children: [
               Expanded(
                 child: Text(
-                  ex?.name ?? entry.exerciseId,
+                  name,
                   style: PeakType.headlineLg().copyWith(fontSize: 20),
                 ),
               ),
-              if (ex != null)
+              if (ex != null) ...[
                 Text(ex.equipment.label, style: PeakType.overline()),
+                const SizedBox(width: 4),
+              ],
+              IconButton(
+                tooltip: 'Remove exercise',
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(
+                  Icons.delete_outline_rounded,
+                  color: PeakColors.destructive,
+                ),
+                onPressed: () => _confirmRemoveExercise(context, ref, name),
+              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -229,7 +298,7 @@ class _EntryCard extends ConsumerWidget {
             data: (sets) {
               if (sets.isEmpty) {
                 return Text(
-                  'No sets yet.',
+                  'No sets yet. Tap "Add set" below.',
                   style: PeakType.bodyMd(color: PeakColors.mutedForeground),
                 );
               }
@@ -277,10 +346,16 @@ class _SetRow extends ConsumerWidget {
         child: const Icon(Icons.delete_outline_rounded, color: PeakColors.destructive),
       ),
       onDismissed: (_) async {
+        HapticFeedback.mediumImpact();
         await ref.read(sessionRepositoryProvider).deleteSet(set.id);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Set removed.')),
+          );
+        }
       },
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
           children: [
             SizedBox(
@@ -298,7 +373,28 @@ class _SetRow extends ConsumerWidget {
                 style: PeakType.tabular(PeakType.bodyLg()),
               ),
             ),
-            if (set.isWarmup) const PeakBadge(label: 'warmup', variant: PeakBadgeVariant.outline),
+            if (set.isWarmup) ...[
+              const PeakBadge(label: 'warmup', variant: PeakBadgeVariant.outline),
+              const SizedBox(width: 4),
+            ],
+            IconButton(
+              tooltip: 'Delete set',
+              visualDensity: VisualDensity.compact,
+              icon: const Icon(
+                Icons.close_rounded,
+                color: PeakColors.mutedForeground,
+                size: 20,
+              ),
+              onPressed: () async {
+                HapticFeedback.selectionClick();
+                await ref.read(sessionRepositoryProvider).deleteSet(set.id);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Set removed.')),
+                  );
+                }
+              },
+            ),
           ],
         ),
       ),

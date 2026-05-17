@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Cloud-backup contract for legacy auto-backup (API < 31).
+  We include the SQLite DB + SharedPreferences so a reinstall restores the
+  user's workout history. iOS does this transparently; Android needs the
+  rules to be explicit.
+-->
+<full-backup-content>
+    <include domain="database" path="peak.sqlite" />
+    <include domain="database" path="peak.sqlite-wal" />
+    <include domain="database" path="peak.sqlite-shm" />
+    <include domain="sharedpref" path="." />
+</full-backup-content>

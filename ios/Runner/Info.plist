@@ -15,7 +15,7 @@
 		<key>CFBundleInfoDictionaryVersion</key>
 		<string>6.0</string>
 		<key>CFBundleName</key>
-		<string>peak</string>
+		<string>Peak</string>
 		<key>CFBundlePackageType</key>
 		<string>APPL</string>
 		<key>CFBundleShortVersionString</key>
@@ -62,8 +62,6 @@
 			<string>UIInterfaceOrientationPortrait</string>
 			<string>UIInterfaceOrientationPortraitUpsideDown</string>
 		</array>
-		<key>NSUserNotificationsUsageDescription</key>
-		<string>Peak uses notifications to alert you when the rest timer between sets is complete.</string>
 		<key>NSDocumentsFolderUsageDescription</key>
 		<string>Peak reads/writes JSON files when you import or export your workout history.</string>
 		<key>LSSupportsOpeningDocumentsInPlace</key>

@@ -123,13 +123,13 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
         ),
         const Spacer(),
         PeakButton(
-          label: 'I\'m new — start over',
+          label: "I'm new",
           size: PeakButtonSize.xl,
           onPressed: _busy ? null : _newUserFlow,
         ),
         const SizedBox(height: 12),
         PeakButton(
-          label: 'Existing user — import data',
+          label: 'Import my data',
           size: PeakButtonSize.xl,
           variant: PeakButtonVariant.secondary,
           onPressed: _busy ? null : _importFlow,

@@ -183,12 +183,37 @@ class _StartWorkoutCard extends ConsumerWidget {
   }
 }
 
-class _ActiveSessionCard extends StatelessWidget {
+class _ActiveSessionCard extends ConsumerWidget {
   const _ActiveSessionCard({required this.active});
   final ActiveSummary active;
 
+  Future<void> _confirmDiscard(BuildContext context, WidgetRef ref) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: PeakColors.surfaceContainerHigh,
+        title: Text('Discard this session?', style: PeakType.headlineLg()),
+        content: Text(
+          'Started but going nowhere? This will remove the session and any sets logged inside it. Cannot be undone.',
+          style: PeakType.bodyMd(),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Keep')),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: PeakColors.destructive),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Discard'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await ref.read(sessionRepositoryProvider).softDeleteSession(active.id);
+    ref.invalidate(_todayDataProvider);
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return PeakCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -211,6 +236,13 @@ class _ActiveSessionCard extends StatelessWidget {
             icon: Icons.bolt_rounded,
             size: PeakButtonSize.xl,
             onPressed: () => context.go('/session/${active.id}'),
+          ),
+          const SizedBox(height: 8),
+          PeakButton(
+            label: 'Discard session',
+            icon: Icons.delete_outline_rounded,
+            variant: PeakButtonVariant.ghost,
+            onPressed: () => _confirmDiscard(context, ref),
           ),
         ],
       ),
@@ -263,7 +295,7 @@ class _WeekCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        '${u.key.label} — ${(u.value * 10).round() / 10} of ${volumeGuidance[u.key]!.mev} sets',
+                        '${u.key.label}: ${(u.value * 10).round() / 10} of ${volumeGuidance[u.key]!.mev} sets',
                         style: PeakType.bodyMd(),
                       ),
                     ),
@@ -287,7 +319,7 @@ class _RecentSessionsCard extends StatelessWidget {
       title: 'Recent sessions',
       child: sessions.isEmpty
           ? Text(
-              'No history yet — your first set is one tap away.',
+              'Nothing here yet. Your first set is one tap away.',
               style: PeakType.bodyMd(color: PeakColors.mutedForeground),
             )
           : Column(

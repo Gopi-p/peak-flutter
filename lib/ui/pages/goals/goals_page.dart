@@ -51,7 +51,7 @@ class GoalsPage extends ConsumerWidget {
             if (goals.isEmpty)
               PeakCard(
                 child: Text(
-                  'No goals yet — tap the button below to set your first.',
+                  'No goals yet. Tap the button below to set your first.',
                   style: PeakType.bodyMd(color: PeakColors.mutedForeground),
                 ),
               ),

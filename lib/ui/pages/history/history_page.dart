@@ -42,7 +42,7 @@ class HistoryPage extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Text(
-                        'No sessions yet — your history fills up one workout at a time.',
+                        'No sessions yet. Your history fills up one workout at a time.',
                         textAlign: TextAlign.center,
                         style: PeakType.bodyMd(color: PeakColors.mutedForeground),
                       ),

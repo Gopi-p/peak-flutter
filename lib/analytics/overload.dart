@@ -44,7 +44,7 @@ Suggestion? suggestNext(List<SetSnapshot> lastWorkingSets) {
       return Suggestion(
         weight: top.weight,
         reps: top.reps + 1,
-        rationale: 'RPE 8 last time — try one more rep at the same weight.',
+        rationale: 'RPE 8 last time. Try one more rep at the same weight.',
       );
     }
     return Suggestion(
