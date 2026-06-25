@@ -11,6 +11,7 @@ const _legs = <MuscleGroup>{
   MuscleGroup.quads,
   MuscleGroup.hamstrings,
   MuscleGroup.glutes,
+  MuscleGroup.adductors,
   MuscleGroup.calves,
 };
 

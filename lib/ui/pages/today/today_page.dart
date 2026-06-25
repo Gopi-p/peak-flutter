@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../analytics/volume.dart';
 import '../../../core/constants.dart';
 import '../../../core/utils.dart';
+import '../../../data/db/database.dart';
 import '../../../data/repositories/session_repository.dart';
 import '../../../providers/providers.dart';
 import '../../theme/colors.dart';
@@ -163,8 +164,17 @@ class _StartWorkoutCard extends ConsumerWidget {
     if (context.mounted) context.go('/session/$id');
   }
 
+  Future<void> _startRoutine(BuildContext context, WidgetRef ref, String routineId) async {
+    final id = await ref.read(sessionRepositoryProvider).startFromRoutine(routineId);
+    if (context.mounted) context.go('/session/$id');
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final routines = ref.watch(routinesStreamProvider).maybeWhen(
+          data: (r) => r,
+          orElse: () => const <Routine>[],
+        );
     return PeakCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -176,6 +186,38 @@ class _StartWorkoutCard extends ConsumerWidget {
             icon: Icons.play_arrow_rounded,
             size: PeakButtonSize.xl,
             onPressed: () => _start(context, ref),
+          ),
+          if (routines.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Text('OR FOLLOW A ROUTINE', style: PeakType.overline()),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final r in routines)
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.playlist_play_rounded, size: 20),
+                    label: Text(r.name),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: PeakColors.foreground,
+                      side: BorderSide(color: PeakColors.outlineVariant.withValues(alpha: 0.6)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: () => _startRoutine(context, ref, r.id),
+                  ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              icon: const Icon(Icons.tune_rounded, size: 18),
+              label: Text(routines.isEmpty ? 'Set up a routine' : 'Manage routines'),
+              style: TextButton.styleFrom(foregroundColor: PeakColors.primary),
+              onPressed: () => context.push('/routines'),
+            ),
           ),
         ],
       ),

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../../../data/db/database.dart';
 import '../../../data/repositories/session_repository.dart';
 import '../../../providers/providers.dart';
+import '../routines/routine_exercise_picker_page.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
@@ -155,7 +158,7 @@ class _Content extends ConsumerWidget {
             for (final entry in entries)
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: _EntryCard(sessionId: session.id, entry: entry),
+                child: _EntryCard(sessionId: session.id, routineId: session.routineId, entry: entry),
               ),
             if (entries.isEmpty)
               PeakCard(
@@ -226,9 +229,98 @@ class _VolStats {
 }
 
 class _EntryCard extends ConsumerWidget {
-  const _EntryCard({required this.sessionId, required this.entry});
+  const _EntryCard({required this.sessionId, required this.routineId, required this.entry});
   final String sessionId;
+  final String? routineId;
   final ExerciseEntry entry;
+
+  /// Swap this exercise for another — for when a machine is taken. Offers the
+  /// routine slot's defined alternatives first (if any), then a full picker.
+  Future<void> _swap(BuildContext context, WidgetRef ref) async {
+    final routineRepo = ref.read(routineRepositoryProvider);
+    final catalog = await ref.read(exerciseCatalogProvider.future);
+
+    // Alternatives defined on the matching routine slot, if this came from one.
+    var altIds = <String>[];
+    if (routineId != null) {
+      final routineEntries = await routineRepo.entriesFor(routineId!);
+      final slot = routineEntries.where((e) => e.exerciseId == entry.exerciseId).firstOrNull;
+      if (slot != null) {
+        altIds = (jsonDecode(slot.alternatives) as List).cast<String>();
+      }
+    }
+
+    if (!context.mounted) return;
+    final chosen = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: PeakColors.surfaceContainerHigh,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
+              child: Text('Swap exercise', style: PeakType.headlineLg().copyWith(fontSize: 20)),
+            ),
+            for (final id in altIds)
+              ListTile(
+                leading: const Icon(Icons.swap_horiz_rounded, color: PeakColors.primary),
+                title: Text(catalog.byId(id)?.name ?? id, style: PeakType.bodyLg()),
+                onTap: () => Navigator.pop(ctx, id),
+              ),
+            ListTile(
+              leading: const Icon(Icons.search_rounded, color: PeakColors.mutedForeground),
+              title: Text('Choose another exercise…', style: PeakType.bodyLg()),
+              onTap: () => Navigator.pop(ctx, '__pick__'),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (chosen == null || !context.mounted) return;
+
+    var newExerciseId = chosen;
+    if (chosen == '__pick__') {
+      final picked = await Navigator.of(context).push<String>(
+        MaterialPageRoute(
+          builder: (_) => RoutineExercisePickerPage(
+            title: 'Swap to',
+            excludeIds: {entry.exerciseId},
+          ),
+        ),
+      );
+      if (picked == null) return;
+      newExerciseId = picked;
+    }
+
+    // If sets were already logged, confirm reassigning them to the new exercise.
+    final existingSets = await ref.read(sessionRepositoryProvider).setsForEntry(entry.id);
+    if (existingSets.isNotEmpty && context.mounted) {
+      final newName = catalog.byId(newExerciseId)?.name ?? newExerciseId;
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (dctx) => AlertDialog(
+          backgroundColor: PeakColors.surfaceContainerHigh,
+          title: Text('Reassign logged sets?', style: PeakType.headlineLg()),
+          content: Text(
+            '${existingSets.length} set(s) already logged here will be moved to $newName.',
+            style: PeakType.bodyMd(),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dctx, false), child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.pop(dctx, true), child: const Text('Swap')),
+          ],
+        ),
+      );
+      if (ok != true) return;
+    }
+    await ref.read(sessionRepositoryProvider).swapEntryExercise(entry.id, newExerciseId);
+  }
 
   Future<void> _confirmRemoveExercise(BuildContext context, WidgetRef ref, String name) async {
     final ok = await showDialog<bool>(
@@ -280,6 +372,15 @@ class _EntryCard extends ConsumerWidget {
                 Text(ex.equipment.label, style: PeakType.overline()),
                 const SizedBox(width: 4),
               ],
+              IconButton(
+                tooltip: 'Swap exercise',
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(
+                  Icons.swap_horiz_rounded,
+                  color: PeakColors.mutedForeground,
+                ),
+                onPressed: () => _swap(context, ref),
+              ),
               IconButton(
                 tooltip: 'Remove exercise',
                 visualDensity: VisualDensity.compact,

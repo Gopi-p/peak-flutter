@@ -14,7 +14,6 @@ class SessionRepository {
   SessionRepository(this._db, this._catalog);
 
   final PeakDatabase _db;
-  // ignore: unused_field
   final ExerciseCatalog _catalog;
   final _uuid = const Uuid();
 
@@ -38,6 +37,83 @@ class SessionRepository {
           ),
         );
     return id;
+  }
+
+  /// Starts a session from a saved routine: pre-creates one exercise entry per
+  /// routine slot (in order) and derives `musclesTrained` from the catalog so
+  /// no muscle-picking step is needed. Links the session back to the routine.
+  Future<String> startFromRoutine(String routineId, {DateTime? startedAt}) async {
+    final id = _uuid.v4();
+    return _db.transaction(() async {
+      final routineEntries = await (_db.select(_db.routineEntries)
+            ..where((t) => t.routineId.equals(routineId))
+            ..orderBy([(t) => OrderingTerm.asc(t.sortOrder)]))
+          .get();
+
+      final muscles = _musclesFor(routineEntries.map((e) => e.exerciseId));
+      await _db.into(_db.sessions).insert(
+            SessionsCompanion.insert(
+              id: id,
+              startedAt: startedAt ?? DateTime.now(),
+              musclesTrained: Value(jsonEncode(muscles)),
+              routineId: Value(routineId),
+            ),
+          );
+      for (var i = 0; i < routineEntries.length; i++) {
+        await _db.into(_db.exerciseEntries).insert(
+              ExerciseEntriesCompanion.insert(
+                id: _uuid.v4(),
+                sessionId: id,
+                exerciseId: routineEntries[i].exerciseId,
+                sortOrder: Value(i + 1),
+              ),
+            );
+      }
+      return id;
+    });
+  }
+
+  /// Replaces the exercise on an entry (the "machine is taken" swap). Any sets
+  /// already logged under the entry are reassigned to the new exercise so
+  /// in-session volume / PR attribution stays consistent, and the session's
+  /// muscle list is recomputed from the catalog.
+  Future<void> swapEntryExercise(String entryId, String newExerciseId) async {
+    await _db.transaction(() async {
+      final entry = await (_db.select(_db.exerciseEntries)..where((t) => t.id.equals(entryId)))
+          .getSingleOrNull();
+      if (entry == null) return;
+      await (_db.update(_db.exerciseEntries)..where((t) => t.id.equals(entryId))).write(
+        ExerciseEntriesCompanion(exerciseId: Value(newExerciseId)),
+      );
+      await (_db.update(_db.workoutSets)..where((t) => t.entryId.equals(entryId))).write(
+        WorkoutSetsCompanion(exerciseId: Value(newExerciseId)),
+      );
+      await _recomputeMuscles(entry.sessionId);
+    });
+  }
+
+  /// Distinct primary-muscle labels (insertion-ordered) for a set of exercises.
+  List<String> _musclesFor(Iterable<String> exerciseIds) {
+    final muscles = <String>[];
+    for (final exId in exerciseIds) {
+      final ex = _catalog.byId(exId);
+      if (ex == null) continue;
+      for (final m in ex.primaryMuscles) {
+        if (!muscles.contains(m.label)) muscles.add(m.label);
+      }
+    }
+    return muscles;
+  }
+
+  Future<void> _recomputeMuscles(String sessionId) async {
+    final entries = await entriesFor(sessionId);
+    final muscles = _musclesFor(entries.map((e) => e.exerciseId));
+    await (_db.update(_db.sessions)..where((t) => t.id.equals(sessionId))).write(
+      SessionsCompanion(
+        musclesTrained: Value(jsonEncode(muscles)),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
   }
 
   Future<Session?> sessionById(String id) async {

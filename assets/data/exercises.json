@@ -10,6 +10,7 @@
     "Quads",
     "Hamstrings",
     "Glutes",
+    "Adductors",
     "Calves",
     "Core",
     "Forearms",
@@ -1542,6 +1543,45 @@
       "videoSource": null
     },
     {
+      "id": "ez-bar-curl",
+      "name": "EZ-Bar Curl",
+      "primaryMuscles": [
+        "Biceps"
+      ],
+      "secondaryMuscles": [
+        "Forearms"
+      ],
+      "equipment": "Barbell",
+      "movementPattern": "Isolation",
+      "evidenceRating": 4,
+      "cue": "Grip the angled bend, elbows pinned, control the lower.",
+      "difficulty": "Beginner",
+      "description": "A barbell curl performed on the cambered EZ-bar. The angled grip keeps your wrists in a more neutral, comfortable position than a straight bar, so most lifters can load it heavy without wrist strain — making it the default heavy curl in most Indian gyms.",
+      "steps": [
+        "Grip the EZ-bar on the inner angled bends, palms facing up and slightly inward.",
+        "Stand tall and let the bar hang at your thighs with arms straight.",
+        "Pin your elbows to your sides — they stay fixed through the rep.",
+        "Curl the bar up to chest level by bending only at the elbows.",
+        "Squeeze the biceps hard at the top.",
+        "Lower slowly to a full stretch — control the eccentric for 2 seconds."
+      ],
+      "mindMuscleCue": "Keep elbows nailed at your sides — only the forearms move, the biceps do all the work.",
+      "commonMistakes": [
+        "Swinging the torso to heave the bar up: stay rigid and let the biceps lift.",
+        "Elbows drifting forward: shifts load to the front delt. Pin them.",
+        "Cutting the bottom short: lower all the way to a long-arm stretch."
+      ],
+      "tips": [
+        "The EZ-bar is gentler on the wrists than a straight bar — pick it if straight-bar curls pinch.",
+        "Finish your last set with a 30% drop set for 10+ reps to chase a pump."
+      ],
+      "animationAsset": null,
+      "detailedVideoUrl": "https://www.youtube.com/watch?v=i1YgFZB6alI",
+      "detailedVideoSource": "Jeff Nippard",
+      "videoUrl": null,
+      "videoSource": null
+    },
+    {
       "id": "dumbbell-curl",
       "name": "Dumbbell Curl",
       "primaryMuscles": [
@@ -3069,6 +3109,43 @@
       "detailedVideoUrl": "https://www.youtube.com/watch?v=OjI5OpV6IWA",
       "detailedVideoSource": "Tutorial",
       "videoUrl": "https://www.youtube.com/shorts/01HilwRf8m8",
+      "videoSource": null
+    },
+    {
+      "id": "hip-adduction-machine",
+      "name": "Hip Adduction (Machine)",
+      "primaryMuscles": [
+        "Adductors"
+      ],
+      "secondaryMuscles": [],
+      "equipment": "Machine",
+      "movementPattern": "Isolation",
+      "evidenceRating": 3,
+      "cue": "Squeeze the knees together against the pads; pause at the close.",
+      "difficulty": "Beginner",
+      "description": "A seated machine where you squeeze your knees inward against pads. It trains the inner-thigh adductors — a group that big squats and lunges hit only lightly. Useful for inner-thigh development, groin resilience, and balancing out the abduction machine.",
+      "steps": [
+        "Sit on the machine with your back against the pad.",
+        "Place your knees and thighs on the outside of the pads, legs spread open.",
+        "Grip the side handles and brace your core.",
+        "Squeeze your knees together against the resistance until the pads nearly meet.",
+        "Pause and squeeze the inner thighs at the closed position.",
+        "Return slowly to the open stretch — control the negative."
+      ],
+      "mindMuscleCue": "Feel the inner thigh pulling the knees together — not the knees themselves.",
+      "commonMistakes": [
+        "Crashing the pads shut with momentum: control the close and the open.",
+        "Setting the start too wide: ease into the stretch to protect the groin.",
+        "Half reps: let the legs open fully each rep for the stretch."
+      ],
+      "tips": [
+        "Lean back slightly and keep a tall posture for the cleanest inner-thigh contraction.",
+        "Pair with the abduction machine for balanced hip development."
+      ],
+      "animationAsset": null,
+      "detailedVideoUrl": "https://www.youtube.com/watch?v=CjAVezAggkI",
+      "detailedVideoSource": "Tutorial",
+      "videoUrl": null,
       "videoSource": null
     },
     {

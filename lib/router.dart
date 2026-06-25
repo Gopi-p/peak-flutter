@@ -11,6 +11,8 @@ import 'ui/pages/library/exercise_detail_page.dart';
 import 'ui/pages/library/library_page.dart';
 import 'ui/pages/onboarding/onboarding_page.dart';
 import 'ui/pages/plate_calc/plate_calc_page.dart';
+import 'ui/pages/routines/routine_editor_page.dart';
+import 'ui/pages/routines/routines_page.dart';
 import 'ui/pages/session/active_session_page.dart';
 import 'ui/pages/session/exercise_picker_page.dart';
 import 'ui/pages/session/log_set_page.dart';
@@ -92,6 +94,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/goals', builder: (_, __) => const GoalsPage()),
       GoRoute(path: '/bodyweight', builder: (_, __) => const BodyWeightPage()),
       GoRoute(path: '/plate-calc', builder: (_, __) => const PlateCalcPage()),
+      GoRoute(path: '/routines', builder: (_, __) => const RoutinesPage()),
+      GoRoute(
+        path: '/routines/:id',
+        builder: (_, state) => RoutineEditorPage(routineId: state.pathParameters['id']!),
+      ),
     ],
   );
 });

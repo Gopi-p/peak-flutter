@@ -10,6 +10,7 @@ class Sessions extends Table {
   DateTimeColumn get endedAt => dateTime().nullable()();
   TextColumn get musclesTrained => text().withDefault(const Constant('[]'))(); // JSON-encoded list
   TextColumn get classification => text().nullable()();
+  TextColumn get routineId => text().nullable()(); // routine this session was started from, if any
   TextColumn get notes => text().withDefault(const Constant(''))();
   DateTimeColumn get deletedAt => dateTime().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
@@ -86,6 +87,36 @@ class PersonalRecords extends Table {
   RealColumn get estimated1Rm => real()();
   DateTimeColumn get achievedAt => dateTime()();
   TextColumn get sessionId => text().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+/// A saved, reusable workout plan (e.g. "Push", "Pull", "Legs"). Ordered
+/// exercises live in [RoutineEntries]. Soft-deleted via `deletedAt`, consistent
+/// with sessions / goals.
+class Routines extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text().withLength(min: 1, max: 80)();
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+/// One ordered slot in a routine. `alternatives` holds a JSON-encoded list of
+/// interchangeable exercise ids (e.g. Pec Deck / Cable Fly / Dumbbell Fly) the
+/// user can swap to in-session when a machine is taken.
+class RoutineEntries extends Table {
+  TextColumn get id => text()();
+  TextColumn get routineId => text().references(Routines, #id, onDelete: KeyAction.cascade)();
+  TextColumn get exerciseId => text()();
+  TextColumn get alternatives => text().withDefault(const Constant('[]'))(); // JSON-encoded list of exercise ids
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 
   @override
   Set<Column<Object>> get primaryKey => {id};

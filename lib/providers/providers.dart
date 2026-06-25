@@ -5,6 +5,7 @@ import '../data/exercise_catalog.dart';
 import '../data/repositories/bodyweight_repository.dart';
 import '../data/repositories/goal_repository.dart';
 import '../data/repositories/pr_repository.dart';
+import '../data/repositories/routine_repository.dart';
 import '../data/repositories/session_repository.dart';
 import '../data/repositories/settings_repository.dart';
 
@@ -41,6 +42,19 @@ final goalRepositoryProvider = Provider<GoalRepository>((ref) {
 
 final prRepositoryProvider = Provider<PrRepository>((ref) {
   return PrRepository(ref.watch(databaseProvider));
+});
+
+final routineRepositoryProvider = Provider<RoutineRepository>((ref) {
+  return RoutineRepository(ref.watch(databaseProvider));
+});
+
+final routinesStreamProvider = StreamProvider<List<Routine>>((ref) {
+  return ref.watch(routineRepositoryProvider).watchAll();
+});
+
+final routineEntriesProvider =
+    StreamProvider.autoDispose.family<List<RoutineEntry>, String>((ref, routineId) {
+  return ref.watch(routineRepositoryProvider).watchEntries(routineId);
 });
 
 final settingsStreamProvider = StreamProvider<AppSetting>((ref) {

@@ -2,11 +2,14 @@
 // Run: `dart run tool/make_assets.dart` from the project root.
 //
 // Produces:
-//   assets/icon/peak-icon.png             (1024×1024 — iOS launcher / legacy Android)
-//   assets/icon/peak-icon-foreground.png  (1024×1024 — Android adaptive foreground, transparent bg, mountain inside 66% safe zone)
-//   assets/icon/peak-splash.png           (1024×1024 — flutter_native_splash source)
+//   assets/icon/peak-icon.png             (1024×1024 — iOS launcher / legacy Android, dark fill)
+//   assets/icon/peak-icon-foreground.png  (1024×1024 — Android adaptive foreground, transparent)
+//   assets/icon/peak-splash.png           (1024×1024 — flutter_native_splash source, transparent)
 //
-// The mark: a soft-gold mountain ("peak") on the Midnight Studio background.
+// The mark: a layered gold mountain range ("peak") with a pale snow tip on the
+// Midnight Studio background. Everything is rendered at 4× and downsampled so
+// edges are smooth. No border ring, no baked-in wordmark — the splash is a
+// transparent mark that floats cleanly on the splash background color.
 
 import 'dart:io';
 import 'dart:math' as math;
@@ -14,6 +17,12 @@ import 'dart:math' as math;
 import 'package:image/image.dart' as img;
 
 enum _Variant { icon, adaptiveForeground, splash }
+
+/// Supersampling factor — render this much larger, then average down for
+/// antialiased edges.
+const _ss = 4;
+
+const _bg = (r: 0x13, g: 0x13, b: 0x16);
 
 void main() {
   _writeIcon('assets/icon/peak-icon.png', size: 1024, variant: _Variant.icon);
@@ -24,135 +33,106 @@ void main() {
 }
 
 void _writeIcon(String path, {required int size, required _Variant variant}) {
-  final image = img.Image(width: size, height: size, numChannels: 4);
+  final ssSize = size * _ss;
+  final image = img.Image(width: ssSize, height: ssSize, numChannels: 4);
 
-  if (variant == _Variant.adaptiveForeground) {
-    // Adaptive foreground: transparent background, mountain centered inside
-    // the inner ~66% safe zone so the OS mask never crops the peak. No glow ring.
-    img.fill(image, color: img.ColorRgba8(0, 0, 0, 0));
-    _drawMountain(image, size: size, scale: 0.66);
-  } else {
-    // Filled square — Midnight Studio dark.
-    img.fill(image, color: img.ColorRgba8(0x13, 0x13, 0x16, 255));
-
-    // Soft glow ring inside the icon, hinting at the rounded-square iOS mask.
-    _strokeRoundedRect(
-      image,
-      left: (size * 0.06).toInt(),
-      top: (size * 0.06).toInt(),
-      width: (size * 0.88).toInt(),
-      height: (size * 0.88).toInt(),
-      radius: (size * 0.20).toInt(),
-      color: img.ColorRgba8(0xD4, 0xAF, 0x37, 90),
-      thickness: math.max(2, (size * 0.012).round()),
-    );
-
-    _drawMountain(image, size: size, scale: 1.0);
-
-    if (variant == _Variant.splash) {
-      // Splash gets a small "PEAK" wordmark stand-in beneath the mountain.
-      final barW = (size * 0.18).toInt();
-      final barH = (size * 0.014).round();
-      img.fillRect(
-        image,
-        x1: ((size - barW) / 2).toInt(),
-        y1: (size * 0.86).toInt(),
-        x2: ((size + barW) / 2).toInt(),
-        y2: (size * 0.86).toInt() + barH,
-        color: img.ColorRgba8(0xEF, 0xC6, 0x56, 255),
-      );
-    }
+  switch (variant) {
+    case _Variant.icon:
+      // Filled Midnight Studio square with a soft radial lift behind the peak.
+      img.fill(image, color: img.ColorRgba8(_bg.r, _bg.g, _bg.b, 255));
+      _radialGlow(image, ssSize);
+      _drawMark(image, ssSize, scale: 0.74);
+    case _Variant.adaptiveForeground:
+      // Transparent; mountain inside the adaptive safe zone so the OS mask
+      // never crops it.
+      img.fill(image, color: img.ColorRgba8(0, 0, 0, 0));
+      _drawMark(image, ssSize, scale: 0.58);
+    case _Variant.splash:
+      // Transparent mark — the native splash composites it over its own
+      // background color, so there is no box or border around the logo.
+      img.fill(image, color: img.ColorRgba8(0, 0, 0, 0));
+      _drawMark(image, ssSize, scale: 0.60);
   }
+
+  final out = img.copyResize(
+    image,
+    width: size,
+    height: size,
+    interpolation: img.Interpolation.average,
+  );
 
   final file = File(path);
   file.parent.createSync(recursive: true);
-  file.writeAsBytesSync(img.encodePng(image));
+  file.writeAsBytesSync(img.encodePng(out));
   stdout.writeln('wrote $path');
 }
 
-/// Draws the mountain triangle + snowcap. `scale` shrinks the mountain
-/// around the canvas center (1.0 = full canvas, 0.66 = inside adaptive
-/// safe zone).
-void _drawMountain(img.Image image, {required int size, required double scale}) {
+/// A faint gold radial glow rising behind the peak — keeps the filled icon
+/// from reading flat without introducing a hard edge.
+void _radialGlow(img.Image image, int size) {
+  final cx = size * 0.5;
+  final cy = size * 0.56;
+  final radius = size * 0.5;
+  for (var y = 0; y < size; y++) {
+    for (var x = 0; x < size; x++) {
+      final d = math.sqrt(math.pow(x - cx, 2) + math.pow(y - cy, 2)) / radius;
+      if (d >= 1) continue;
+      final t = (1 - d) * (1 - d); // ease-out falloff
+      final a = (26 * t); // very subtle
+      final px = image.getPixel(x, y);
+      image.setPixelRgba(
+        x,
+        y,
+        _mix(px.r.toInt(), 0xD4, a / 255),
+        _mix(px.g.toInt(), 0xAF, a / 255),
+        _mix(px.b.toInt(), 0x37, a / 255),
+        255,
+      );
+    }
+  }
+}
+
+/// Draws the layered mountain range. `scale` shrinks the mark around the
+/// canvas center (1.0 = full canvas).
+void _drawMark(img.Image image, int size, {required double scale}) {
   final cx = size / 2;
   final cy = size / 2;
   double sx(double frac) => cx + (frac - 0.5) * size * scale;
   double sy(double frac) => cy + (frac - 0.5) * size * scale;
 
-  final ax = sx(0.18).toInt();
-  final ay = sy(0.78).toInt();
-  final bx = sx(0.50).toInt();
-  final by = sy(0.28).toInt();
-  final dx = sx(0.82).toInt();
-  final dy = sy(0.78).toInt();
-  _fillTriangleGradient(image, ax: ax, ay: ay, bx: bx, by: by, cx: dx, cy: dy);
-
-  // Snowcap accent.
-  _drawLine(
+  // Back peak — taller, muted gold, sits behind and to the left.
+  _fillTriangleGradient(
     image,
-    x1: sx(0.38).toInt(),
-    y1: sy(0.56).toInt(),
-    x2: sx(0.50).toInt(),
-    y2: sy(0.40).toInt(),
-    color: img.ColorRgba8(0x13, 0x13, 0x16, 220),
-    thickness: math.max(3, (size * 0.012).round()),
+    ax: sx(0.06).toInt(), ay: sy(0.84).toInt(),
+    bx: sx(0.40).toInt(), by: sy(0.20).toInt(),
+    cx: sx(0.66).toInt(), cy: sy(0.84).toInt(),
+    topR: 0xC6, topG: 0xA0, topB: 0x42,
+    botR: 0x8C, botG: 0x71, botB: 0x28,
   );
-  _drawLine(
+
+  // Front peak — brighter gold, overlaps the back peak for depth.
+  _fillTriangleGradient(
     image,
-    x1: sx(0.50).toInt(),
-    y1: sy(0.40).toInt(),
-    x2: sx(0.62).toInt(),
-    y2: sy(0.56).toInt(),
-    color: img.ColorRgba8(0x13, 0x13, 0x16, 220),
-    thickness: math.max(3, (size * 0.012).round()),
+    ax: sx(0.40).toInt(), ay: sy(0.84).toInt(),
+    bx: sx(0.62).toInt(), by: sy(0.14).toInt(),
+    cx: sx(0.94).toInt(), cy: sy(0.84).toInt(),
+    topR: 0xF2, topG: 0xCB, topB: 0x5E,
+    botR: 0xD4, botG: 0xAF, botB: 0x37,
+  );
+
+  // Snowcap on the front peak — a solid pale tip that follows the peak's own
+  // slopes (base corners sit exactly on the front peak's edges at frac y≈0.30).
+  _fillTriangleGradient(
+    image,
+    ax: sx(0.570).toInt(), ay: sy(0.30).toInt(),
+    bx: sx(0.62).toInt(), by: sy(0.14).toInt(),
+    cx: sx(0.693).toInt(), cy: sy(0.30).toInt(),
+    topR: 0xFA, topG: 0xF4, topB: 0xE2,
+    botR: 0xEC, botG: 0xDF, botB: 0xBE,
   );
 }
 
 // --- primitives --------------------------------------------------------------
-
-void _strokeRoundedRect(
-  img.Image image, {
-  required int left,
-  required int top,
-  required int width,
-  required int height,
-  required int radius,
-  required img.Color color,
-  required int thickness,
-}) {
-  // Outer
-  img.drawRect(
-    image,
-    x1: left,
-    y1: top,
-    x2: left + width,
-    y2: top + height,
-    color: color,
-    radius: radius,
-    thickness: thickness,
-  );
-}
-
-void _drawLine(
-  img.Image image, {
-  required int x1,
-  required int y1,
-  required int x2,
-  required int y2,
-  required img.Color color,
-  required int thickness,
-}) {
-  img.drawLine(
-    image,
-    x1: x1,
-    y1: y1,
-    x2: x2,
-    y2: y2,
-    color: color,
-    thickness: thickness,
-    antialias: true,
-  );
-}
 
 void _fillTriangleGradient(
   img.Image image, {
@@ -162,8 +142,13 @@ void _fillTriangleGradient(
   required int by,
   required int cx,
   required int cy,
+  required int topR,
+  required int topG,
+  required int topB,
+  required int botR,
+  required int botG,
+  required int botB,
 }) {
-  // Triangle bounding rect.
   final minX = [ax, bx, cx].reduce(math.min);
   final maxX = [ax, bx, cx].reduce(math.max);
   final minY = [ay, by, cy].reduce(math.min);
@@ -172,17 +157,23 @@ void _fillTriangleGradient(
   for (var y = minY; y <= maxY; y++) {
     for (var x = minX; x <= maxX; x++) {
       if (!_pointInTriangle(x, y, ax, ay, bx, by, cx, cy)) continue;
-      // Vertical gradient: bright at apex, deeper at base.
+      // Vertical gradient: bright near the apex, deeper at the base.
       final t = (y - minY) / math.max(1, maxY - minY);
-      final r = _lerp(0xEF, 0xD4, t);
-      final g = _lerp(0xC6, 0xAF, t);
-      final b = _lerp(0x56, 0x37, t);
-      image.setPixelRgba(x, y, r, g, b, 255);
+      image.setPixelRgba(
+        x,
+        y,
+        _lerp(topR, botR, t),
+        _lerp(topG, botG, t),
+        _lerp(topB, botB, t),
+        255,
+      );
     }
   }
 }
 
 int _lerp(int a, int b, double t) => (a + (b - a) * t).round();
+
+int _mix(int base, int over, double a) => (base + (over - base) * a).round().clamp(0, 255);
 
 bool _pointInTriangle(int px, int py, int ax, int ay, int bx, int by, int cx, int cy) {
   num sign(int x1, int y1, int x2, int y2, int x3, int y3) =>

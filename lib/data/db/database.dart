@@ -16,6 +16,8 @@ part 'database.g.dart';
   Goals,
   PersonalRecords,
   AppSettings,
+  Routines,
+  RoutineEntries,
 ])
 class PeakDatabase extends _$PeakDatabase {
   PeakDatabase() : super(_openConnection());
@@ -23,7 +25,7 @@ class PeakDatabase extends _$PeakDatabase {
   PeakDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -35,6 +37,15 @@ class PeakDatabase extends _$PeakDatabase {
             AppSettingsCompanion.insert(id: const Value(1)),
             mode: InsertMode.insertOrIgnore,
           );
+        },
+        onUpgrade: (m, from, to) async {
+          // v1 → v2: routines feature. Add the two routine tables and the
+          // nullable `routineId` link on sessions.
+          if (from < 2) {
+            await m.createTable(routines);
+            await m.createTable(routineEntries);
+            await m.addColumn(sessions, sessions.routineId);
+          }
         },
         beforeOpen: (details) async {
           await customStatement('PRAGMA foreign_keys = ON');

@@ -18,7 +18,7 @@ class ExportImportService {
   ExportImportService(this._db);
   final PeakDatabase _db;
 
-  static const _exportVersion = 1;
+  static const _exportVersion = 2;
 
   Future<Map<String, dynamic>> _buildPayload() async {
     final sessions = await _db.select(_db.sessions).get();
@@ -27,6 +27,8 @@ class ExportImportService {
     final bw = await _db.select(_db.bodyWeights).get();
     final goals = await _db.select(_db.goals).get();
     final prs = await _db.select(_db.personalRecords).get();
+    final routines = await _db.select(_db.routines).get();
+    final routineEntries = await _db.select(_db.routineEntries).get();
     final settings = await _db.select(_db.appSettings).getSingleOrNull();
 
     return {
@@ -38,6 +40,8 @@ class ExportImportService {
       'bodyWeights': bw.map(_bwToJson).toList(),
       'goals': goals.map(_goalToJson).toList(),
       'personalRecords': prs.map(_prToJson).toList(),
+      'routines': routines.map(_routineToJson).toList(),
+      'routineEntries': routineEntries.map(_routineEntryToJson).toList(),
       'settings': settings == null ? null : _settingsToJson(settings),
     };
   }
@@ -100,6 +104,8 @@ class ExportImportService {
         await _db.delete(_db.sessions).go();
         await _db.delete(_db.bodyWeights).go();
         await _db.delete(_db.goals).go();
+        await _db.delete(_db.routineEntries).go();
+        await _db.delete(_db.routines).go();
       }
 
       final sessions = (data['sessions'] as List? ?? const []).cast<Map<String, dynamic>>();
@@ -108,6 +114,9 @@ class ExportImportService {
       final bw = (data['bodyWeights'] as List? ?? const []).cast<Map<String, dynamic>>();
       final goals = (data['goals'] as List? ?? const []).cast<Map<String, dynamic>>();
       final prs = (data['personalRecords'] as List? ?? const []).cast<Map<String, dynamic>>();
+      final routines = (data['routines'] as List? ?? const []).cast<Map<String, dynamic>>();
+      final routineEntries =
+          (data['routineEntries'] as List? ?? const []).cast<Map<String, dynamic>>();
 
       for (final s in sessions) {
         await _db.into(_db.sessions).insertOnConflictUpdate(_sessionFromJson(s));
@@ -126,6 +135,12 @@ class ExportImportService {
       }
       for (final pr in prs) {
         await _db.into(_db.personalRecords).insertOnConflictUpdate(_prFromJson(pr));
+      }
+      for (final r in routines) {
+        await _db.into(_db.routines).insertOnConflictUpdate(_routineFromJson(r));
+      }
+      for (final re in routineEntries) {
+        await _db.into(_db.routineEntries).insertOnConflictUpdate(_routineEntryFromJson(re));
       }
       final settingsJson = data['settings'];
       if (settingsJson is Map<String, dynamic>) {
@@ -149,6 +164,7 @@ class ExportImportService {
         'endedAt': s.endedAt?.toIso8601String(),
         'musclesTrained': jsonDecode(s.musclesTrained),
         'classification': s.classification,
+        'routineId': s.routineId,
         'notes': s.notes,
         'deletedAt': s.deletedAt?.toIso8601String(),
       };
@@ -207,6 +223,21 @@ class ExportImportService {
         'sessionId': p.sessionId,
       };
 
+  Map<String, dynamic> _routineToJson(Routine r) => {
+        'id': r.id,
+        'name': r.name,
+        'sortOrder': r.sortOrder,
+        'deletedAt': r.deletedAt?.toIso8601String(),
+      };
+
+  Map<String, dynamic> _routineEntryToJson(RoutineEntry e) => {
+        'id': e.id,
+        'routineId': e.routineId,
+        'exerciseId': e.exerciseId,
+        'alternatives': jsonDecode(e.alternatives),
+        'sortOrder': e.sortOrder,
+      };
+
   Map<String, dynamic> _settingsToJson(AppSetting s) => {
         'defaultRestSeconds': s.defaultRestSeconds,
         'rpeEnabled': s.rpeEnabled,
@@ -222,6 +253,7 @@ class ExportImportService {
         endedAt: Value(_optDate(j['endedAt'])),
         musclesTrained: Value(jsonEncode(j['musclesTrained'] ?? const [])),
         classification: Value(j['classification'] as String?),
+        routineId: Value(j['routineId'] as String?),
         notes: Value((j['notes'] as String?) ?? ''),
         deletedAt: Value(_optDate(j['deletedAt'])),
       );
@@ -279,6 +311,22 @@ class ExportImportService {
         estimated1Rm: (j['estimated1Rm'] as num).toDouble(),
         achievedAt: DateTime.parse(j['achievedAt'] as String),
         sessionId: Value(j['sessionId'] as String?),
+      );
+
+  RoutinesCompanion _routineFromJson(Map<String, dynamic> j) => RoutinesCompanion.insert(
+        id: j['id'] as String,
+        name: j['name'] as String,
+        sortOrder: Value((j['sortOrder'] as num?)?.toInt() ?? 0),
+        deletedAt: Value(_optDate(j['deletedAt'])),
+      );
+
+  RoutineEntriesCompanion _routineEntryFromJson(Map<String, dynamic> j) =>
+      RoutineEntriesCompanion.insert(
+        id: j['id'] as String,
+        routineId: j['routineId'] as String,
+        exerciseId: j['exerciseId'] as String,
+        alternatives: Value(jsonEncode(j['alternatives'] ?? const [])),
+        sortOrder: Value((j['sortOrder'] as num?)?.toInt() ?? 0),
       );
 
   AppSettingsCompanion _settingsCompanion(Map<String, dynamic> j) => AppSettingsCompanion(

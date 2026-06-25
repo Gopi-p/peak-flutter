@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/constants.dart';
 import '../../../data/repositories/session_repository.dart';
 import '../../../providers/providers.dart';
 import '../../theme/colors.dart';
@@ -16,7 +17,7 @@ class WhatsNextPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final sessionAsync = ref.watch(_sessionProvider(sessionId));
+    final dataAsync = ref.watch(_whatsNextProvider(sessionId));
     return Scaffold(
       backgroundColor: PeakColors.background,
       appBar: AppBar(
@@ -26,11 +27,11 @@ class WhatsNextPage extends ConsumerWidget {
         ),
         title: Text("What's next?", style: PeakType.overline()),
       ),
-      body: sessionAsync.when(
+      body: dataAsync.when(
         loading: () => const Center(child: CircularProgressIndicator(color: PeakColors.primary)),
         error: (e, _) => Center(child: Text('$e', style: PeakType.bodyMd())),
-        data: (session) {
-          final lastMuscle = session?.muscles.lastOrNull;
+        data: (data) {
+          final lastMuscle = data.lastMuscle;
           return Padding(
             padding: const EdgeInsets.fromLTRB(
               PeakSpacing.edge,
@@ -46,6 +47,30 @@ class WhatsNextPage extends ConsumerWidget {
                   style: PeakType.headlineXl().copyWith(fontSize: 28, height: 1.05),
                 ),
                 const SizedBox(height: 16),
+                if (data.nextEntryId != null)
+                  PeakCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text('NEXT IN YOUR ROUTINE', style: PeakType.overline()),
+                        const SizedBox(height: 6),
+                        Text(
+                          data.nextExerciseName ?? '',
+                          style: PeakType.headlineLg().copyWith(fontSize: 22),
+                        ),
+                        const SizedBox(height: 12),
+                        PeakButton(
+                          label: 'Log this exercise',
+                          icon: Icons.arrow_forward_rounded,
+                          size: PeakButtonSize.xl,
+                          onPressed: () => context.push(
+                            '/session/$sessionId/log?entryId=${data.nextEntryId}',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (data.nextEntryId != null) const SizedBox(height: 12),
                 PeakCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -55,6 +80,7 @@ class WhatsNextPage extends ConsumerWidget {
                           label: 'Same muscle (${lastMuscle.label})',
                           icon: Icons.refresh_rounded,
                           size: PeakButtonSize.xl,
+                          variant: PeakButtonVariant.secondary,
                           onPressed: () => context.push(
                             '/session/$sessionId/exercise?muscle=${Uri.encodeComponent(lastMuscle.label)}',
                           ),
@@ -90,7 +116,36 @@ class WhatsNextPage extends ConsumerWidget {
   }
 }
 
-final _sessionProvider =
-    FutureProvider.autoDispose.family((ref, String id) async {
-  return ref.watch(sessionRepositoryProvider).sessionById(id);
+class _WhatsNextData {
+  const _WhatsNextData({this.lastMuscle, this.nextEntryId, this.nextExerciseName});
+  final MuscleGroup? lastMuscle;
+  final String? nextEntryId;
+  final String? nextExerciseName;
+}
+
+final _whatsNextProvider =
+    FutureProvider.autoDispose.family<_WhatsNextData, String>((ref, id) async {
+  final repo = ref.watch(sessionRepositoryProvider);
+  final session = await repo.sessionById(id);
+  if (session == null) return const _WhatsNextData();
+
+  String? nextEntryId;
+  String? nextName;
+  if (session.routineId != null) {
+    final entries = await repo.entriesFor(id);
+    final catalog = await ref.watch(exerciseCatalogProvider.future);
+    for (final e in entries) {
+      final sets = await repo.setsForEntry(e.id);
+      if (sets.isEmpty) {
+        nextEntryId = e.id;
+        nextName = catalog.byId(e.exerciseId)?.name ?? e.exerciseId;
+        break;
+      }
+    }
+  }
+  return _WhatsNextData(
+    lastMuscle: session.muscles.lastOrNull,
+    nextEntryId: nextEntryId,
+    nextExerciseName: nextName,
+  );
 });
